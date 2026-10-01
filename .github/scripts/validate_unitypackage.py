@@ -6,7 +6,7 @@ import json
 import re
 import tarfile
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 def validate(archive_path, unitypackage_path):
@@ -16,9 +16,10 @@ def validate(archive_path, unitypackage_path):
         entries = {}
         for member in package.getmembers():
             if member.isfile():
-                if member.name in entries:
+                name = PurePosixPath(member.name).as_posix()
+                if name in entries:
                     raise ValueError(f"Duplicate UnityPackage entry: {member.name}")
-                entries[member.name] = package.extractfile(member).read()
+                entries[name] = package.extractfile(member).read()
         expected = set()
         for name in archive.namelist():
             if not name.endswith(".meta"):
