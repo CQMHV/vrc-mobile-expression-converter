@@ -26,6 +26,12 @@ Windows skip behavior, manual renderer selection, rejection of external renderer
 
 On October 2, 2026, runtime and editor sources were compiled separately using Unity 2022.3.22f1 Roslyn and the original project's dependency assemblies. Both compilations completed without diagnostics. Existing component, menu, shader, and asset GUIDs were preserved. This organization check did not repeat Unity importing, NDMF builds, or device tests.
 
+## VPM import check
+
+On October 2, 2026, the actual VPM ZIP was extracted into a separate Unity 2022.3.22f1 Avatar test project with SDK 3.10.5 and NDMF 1.14.8. Runtime and editor package assemblies compiled. The preserved component script GUID resolved to the component type, and a small synthetic transparent material fixture passed full Android NDMF processing, producing Multiply without inherited fallback tags while preserving its mesh, material slot, and source material.
+
+The fixture did not install VQT, Modular Avatar, lilToon, or Poiyomi. Its minimal test shader exercised material detection and plugin registration, not visual equivalence to those shaders. Existing model checks and the owner's device feedback remain the visual validation. VPM package structure, archive scope, manifest/tag matching, AGPL-3.0-only metadata, and listing SHA-256 checks were also validated.
+
 ## Build stages
 
 1. **Resolving:** Record the original transparent expression materials.
@@ -38,7 +44,7 @@ Animation handling uses NDMF Animator Services. Conversion caches belong to the 
 
 | File | Responsibility |
 | --- | --- |
-| MobileExpressionSettings.cs | Avatar component and face renderer selection |
+| Runtime/MobileExpressionSettings.cs | Avatar component and face renderer selection |
 | Editor/MobileExpressionPlugin.cs | NDMF stages, target selection, and static / animated material replacement |
 | Editor/ParticleTextureConverter.cs | Material detection, parameter validation, and texture preparation |
 | Editor/LilToonCompatibilityTexture.shader | Main color and alpha mask composition for lilToon / Poiyomi |

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (c) 2026 CQMHV
+
 using System.Linq;
 using nadena.dev.ndmf.localization;
 using nadena.dev.ndmf.ui;

@@ -1,0 +1,15 @@
+{
+    "name": "CQMHV.MobileExpressionConverter.Editor",
+    "rootNamespace": "MobileExpressionConverter",
+    "references": [
+        "CQMHV.MobileExpressionConverter.Runtime",
+        "nadena.dev.ndmf.runtime",
+        "nadena.dev.ndmf",
+        "VRC.SDK3A",
+        "VRC.SDKBase"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "autoReferenced": true
+}

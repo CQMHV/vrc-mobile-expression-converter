@@ -6,14 +6,19 @@ Mobile Expression Converter (MEC) converts supported lilToon and Poiyomi face ma
 
 **This is an approximate conversion.** Blush, blue shading, and other dark overlays work well with Multiply. White tears and highlights may become faint or disappear.
 
-## Installation
+## Installation with VCC / ALCOM
 
-1. Install **VRChat SDK Avatars** and **NDMF** in your avatar project. NDMF can also be installed as a dependency of Modular Avatar.
-2. Download this repository using **Code → Download ZIP**, or clone it.
-3. Copy `Assets/MobileExpressionConverter` and `Assets/MobileExpressionConverter.meta` into your project's `Assets` directory.
-4. Wait for Unity to finish importing and compiling.
+Open the [VPM installation page](https://cqmhv.github.io/vrc-mobile-expression-converter/) and click **Add to VCC / ALCOM**. You can also add this repository URL manually in the package manager:
 
-The repository contains the component's source files. It does not include the VRChat SDK, NDMF, shader packages, or avatar assets.
+```text
+https://cqmhv.github.io/vrc-mobile-expression-converter/index.json
+```
+
+Ensure that the official VRChat and [NDMF repository](https://vpm.nadena.dev/vpm.json) are available to your package manager, then add **Mobile Expression Converter** to an Avatar project. The manifest declares the SDK and NDMF dependencies.
+
+For manual installation, download the VPM ZIP from [Releases](https://github.com/CQMHV/vrc-mobile-expression-converter/releases/latest) and extract it to `Packages/com.cqmhv.mobile-expression-converter`. Install the required dependencies first. If upgrading from the old Assets distribution, remove `Assets/MobileExpressionConverter` before manual installation; VPM uses the legacy folder migration metadata to remove it automatically.
+
+The package includes the component source, documentation, and license. It does not bundle SDKs, shader packages, or avatar assets. There is no bundled legacy Assets copy.
 
 ### Tested environment
 
@@ -67,3 +72,11 @@ Editor checks cover Chocolat, Chiffon, Milk-Re, Shinano, and Mafuyu; full NDMF +
 On October 2, 2026, the project owner reported that one processed avatar worked on an Android device. This confirms a real-device result for that avatar, without claiming that every avatar has been tested on hardware.
 
 See [validation notes](docs/VALIDATION.md) for the verification scope and build stages.
+
+## License
+
+Copyright (c) 2026 CQMHV. Licensed under **GNU Affero General Public License version 3 only** (`AGPL-3.0-only`). See [LICENSE](LICENSE). This is not an "or any later version" grant.
+
+## Releasing
+
+Bump `package.json` and its release URL, update `CHANGELOG.md`, and run the **Release VPM package** workflow. Releases include a package ZIP and manifest. The Pages workflow reads published release ZIPs to generate an index with SHA-256 checksums, retaining earlier versions.

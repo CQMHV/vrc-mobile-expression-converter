@@ -1,0 +1,9 @@
+{
+    "name": "CQMHV.MobileExpressionConverter.Runtime",
+    "rootNamespace": "MobileExpressionConverter",
+    "references": [
+        "nadena.dev.ndmf.runtime"
+    ],
+    "includePlatforms": [],
+    "autoReferenced": true
+}

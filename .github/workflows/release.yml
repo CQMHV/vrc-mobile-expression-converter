@@ -1,0 +1,33 @@
+name: Release VPM package
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Validate distribution
+        run: python .github/scripts/test_distribution.py
+      - name: Build package
+        run: python .github/scripts/build_package.py
+      - name: Publish immutable version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(python -c 'import json; print(json.load(open("package.json"))["version"])')"
+          gh release create "v$version" dist/*.zip dist/package.json dist/SHA256SUMS \
+            --target "$GITHUB_SHA" --title "Mobile Expression Converter $version" \
+            --notes-file CHANGELOG.md
+  pages:
+    needs: release
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml

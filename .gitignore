@@ -8,3 +8,8 @@
 *.sln
 .DS_Store
 Thumbs.db
+
+/dist/
+/site-dist/
+__pycache__/
+*.pyc

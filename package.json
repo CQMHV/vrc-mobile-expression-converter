@@ -1,0 +1,23 @@
+{
+    "name": "com.cqmhv.mobile-expression-converter",
+    "displayName": "Mobile Expression Converter",
+    "version": "1.0.0",
+    "unity": "2022.3",
+    "description": "Adapt transparent facial effects for VRChat Android avatars with NDMF. Supports lilToon, Poiyomi, and material-switching animations.",
+    "author": {
+        "name": "CQMHV",
+        "email": "185041488+CQMHV@users.noreply.github.com",
+        "url": "https://github.com/CQMHV"
+    },
+    "license": "AGPL-3.0-only",
+    "url": "https://github.com/CQMHV/vrc-mobile-expression-converter/releases/download/v1.0.0/com.cqmhv.mobile-expression-converter-1.0.0.zip",
+    "documentationUrl": "https://github.com/CQMHV/vrc-mobile-expression-converter#readme",
+    "changelogUrl": "https://github.com/CQMHV/vrc-mobile-expression-converter/blob/main/CHANGELOG.md",
+    "vpmDependencies": {
+        "com.vrchat.avatars": ">=3.10.5 <3.11.0",
+        "nadena.dev.ndmf": ">=1.14.8 <2.0.0"
+    },
+    "legacyFolders": {
+        "Assets\\MobileExpressionConverter": "0ba0b5e26ac66f04d955a23e454aa5cc"
+    }
+}
