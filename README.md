@@ -18,6 +18,8 @@ Ensure that the official VRChat and [NDMF repository](https://vpm.nadena.dev/vpm
 
 For manual installation, download the VPM ZIP from [Releases](https://github.com/CQMHV/vrc-mobile-expression-converter/releases/latest) and extract it to `Packages/com.cqmhv.mobile-expression-converter`. Install the required dependencies first. If upgrading from the old Assets distribution, remove `Assets/MobileExpressionConverter` before manual installation; VPM uses the legacy folder migration metadata to remove it automatically.
 
+Releases also include an embedded `.unitypackage` for **Assets → Import Package → Custom Package**. Like the VPM ZIP, it installs to `Packages/com.cqmhv.mobile-expression-converter` and requires the SDK and NDMF dependencies to be installed first. Use one installation method. Remove the old Assets copy before importing manually.
+
 The package includes the component source, documentation, and license. It does not bundle SDKs, shader packages, or avatar assets. There is no bundled legacy Assets copy.
 
 ### Tested environment
@@ -79,4 +81,6 @@ Copyright (c) 2026 CQMHV. Licensed under **GNU Affero General Public License ver
 
 ## Releasing
 
-Bump `package.json` and its release URL, update `CHANGELOG.md`, and run the **Release VPM package** workflow. Releases include a package ZIP and manifest. The Pages workflow reads published release ZIPs to generate an index with SHA-256 checksums, retaining earlier versions.
+Bump `package.json` and its release URL, update `CHANGELOG.md`, and run the **Release VPM package** workflow. Release assets are a VPM ZIP, an embedded UnityPackage, and `package.json`. Re-running the workflow for an existing version can add a missing UnityPackage using the already published ZIP without replacing published assets.
+
+The Pages workflow uses the official `vrchat-community/template-package` website and `vrchat-community/package-list-action` renderer, following VRCLearn's distribution approach. Listing metadata lives in `.github/source.json`. The listing builder reads published release ZIPs to generate an index with SHA-256 checksums, retaining earlier versions. Checksums are part of the VPM index; there is no separate checksum release asset.

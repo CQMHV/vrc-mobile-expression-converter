@@ -64,7 +64,6 @@ def build(root, output):
             target.writestr(info, path.read_bytes())
     (output / "package.json").write_text(json.dumps(manifest, indent=4) + "\n", encoding="utf-8")
     checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
-    (output / "SHA256SUMS").write_text(f"{checksum}  {archive.name}\n", encoding="utf-8")
     print(f"Built {archive.name}: {checksum}")
     return archive
 

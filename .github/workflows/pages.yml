@@ -6,8 +6,9 @@ on:
   push:
     branches: [main]
     paths:
-      - Website/**
+      - .github/source.json
       - .github/scripts/build_listing.py
+      - .github/scripts/prepare_template.py
       - .github/workflows/pages.yml
 
 permissions: {}
@@ -24,10 +25,38 @@ jobs:
       pages: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Check out the official VPM website template
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: vrchat-community/template-package
+          ref: 591e23fe5175b8279cc3998f65e81add604aabc9
+          path: official-template
+      - name: Check out the official VPM listing renderer
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: vrchat-community/package-list-action
+          ref: cb31c3b5d17d1070d7741c61de2ca1b219224039
+          path: ci
+      - name: Render the official VPM listing website
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python .github/scripts/prepare_template.py official-template
+          dotnet run \
+            --project ci/PackageBuilder/PackageBuilder.csproj \
+            --framework net8.0 \
+            -- BuildRepoListing \
+            --root ci \
+            --package-listing-source-folder "$GITHUB_WORKSPACE/official-template" \
+            --list-publish-directory "$GITHUB_WORKSPACE/official-template/Website" \
+            --current-package-name com.cqmhv.mobile-expression-converter \
+            --current-listing-url "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}/.vpm-empty-index.json"
+          node --input-type=module --check < official-template/Website/app.js
       - name: Build listing from release assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python .github/scripts/build_listing.py
+        run: python .github/scripts/build_listing.py --website official-template/Website
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:

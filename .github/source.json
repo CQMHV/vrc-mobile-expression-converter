@@ -1,0 +1,18 @@
+{
+    "name": "Mobile Expression Converter",
+    "id": "com.cqmhv.mobile-expression-converter.repository",
+    "url": "https://cqmhv.github.io/vrc-mobile-expression-converter/index.json",
+    "author": {
+        "name": "CQMHV",
+        "url": "https://github.com/CQMHV",
+        "email": "185041488+CQMHV@users.noreply.github.com"
+    },
+    "description": "Adapt transparent facial effects for VRChat Android avatars with NDMF.",
+    "infoLink": {
+        "text": "Source and documentation",
+        "url": "https://github.com/CQMHV/vrc-mobile-expression-converter"
+    },
+    "repository": "CQMHV/vrc-mobile-expression-converter",
+    "packageName": "com.cqmhv.mobile-expression-converter",
+    "githubRepos": ["CQMHV/vrc-mobile-expression-converter"]
+}

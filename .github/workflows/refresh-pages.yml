@@ -2,7 +2,7 @@ name: Refresh listing after a release
 
 on:
   release:
-    types: [published, edited]
+    types: [published, edited, deleted, unpublished]
 
 permissions:
   actions: write

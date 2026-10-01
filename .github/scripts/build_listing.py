@@ -13,9 +13,9 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-REPOSITORY = "CQMHV/vrc-mobile-expression-converter"
-PACKAGE = "com.cqmhv.mobile-expression-converter"
-SITE = "https://cqmhv.github.io/vrc-mobile-expression-converter/"
+SOURCE = json.loads((ROOT / ".github/source.json").read_text(encoding="utf-8"))
+REPOSITORY = SOURCE["repository"]
+PACKAGE = SOURCE["packageName"]
 
 
 def read_version(data, url, version):
@@ -29,7 +29,7 @@ def read_version(data, url, version):
     return manifest
 
 
-def build(output):
+def build(output, website):
     result = subprocess.run(
         ["gh", "api", f"repos/{REPOSITORY}/releases?per_page=100", "--paginate", "--slurp"],
         check=True, capture_output=True, text=True, encoding="utf-8"
@@ -53,15 +53,22 @@ def build(output):
             with urllib.request.urlopen(request, timeout=60) as response:
                 versions[version] = read_version(response.read(), url, version)
     versions = dict(sorted(versions.items(), key=lambda item: tuple(map(int, item[0].split("."))), reverse=True))
+    if not versions:
+        raise ValueError("No published VPM package versions were found")
     output.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(ROOT / "Website/index.html", output / "index.html")
+    if not all((website / name).is_file() for name in ("index.html", "app.js", "styles.css")):
+        raise ValueError("The rendered official VPM website is incomplete")
+    shutil.copytree(website, output, dirs_exist_ok=True)
     (output / ".nojekyll").write_text("")
     listing = {
-        "name": "Mobile Expression Converter",
-        "id": "com.cqmhv.mobile-expression-converter.repository",
-        "url": SITE + "index.json",
-        "author": "CQMHV",
-        "packages": {PACKAGE: {"versions": versions}} if versions else {}
+        "name": SOURCE["name"],
+        "id": SOURCE["id"],
+        "url": SOURCE["url"],
+        "author": SOURCE["author"]["name"],
+        "authorUrl": SOURCE["author"]["url"],
+        "description": SOURCE["description"],
+        "infoLink": SOURCE["infoLink"],
+        "packages": {PACKAGE: {"versions": versions}}
     }
     (output / "index.json").write_text(json.dumps(listing, indent=4) + "\n", encoding="utf-8")
     print(f"Listed {len(versions)} published package version(s)")
@@ -70,5 +77,6 @@ def build(output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=ROOT / "site-dist")
+    parser.add_argument("--website", type=Path, required=True)
     args = parser.parse_args()
-    build(args.output)
+    build(args.output, args.website)

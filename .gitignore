@@ -13,3 +13,5 @@ Thumbs.db
 /site-dist/
 __pycache__/
 *.pyc
+/official-template/
+/ci/

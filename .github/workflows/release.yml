@@ -5,6 +5,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: vpm-release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -14,16 +18,74 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Validate distribution
         run: python .github/scripts/test_distribution.py
-      - name: Build package
-        run: python .github/scripts/build_package.py
-      - name: Publish immutable version
+      - name: Build a new version or reuse published package bytes
+        id: package
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           version="$(python -c 'import json; print(json.load(open("package.json"))["version"])')"
-          gh release create "v$version" dist/*.zip dist/package.json dist/SHA256SUMS \
-            --target "$GITHUB_SHA" --title "Mobile Expression Converter $version" \
-            --notes-file CHANGELOG.md
+          name="com.cqmhv.mobile-expression-converter-$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" --json tagName > "$RUNNER_TEMP/release.json" 2> "$RUNNER_TEMP/release-error.txt"; then
+            gh release download "v$version" --pattern "$name.zip" --pattern package.json --dir dist
+            echo "existing=true" >> "$GITHUB_OUTPUT"
+          elif grep -qi 'release not found' "$RUNNER_TEMP/release-error.txt"; then
+            python .github/scripts/build_package.py
+            echo "existing=false" >> "$GITHUB_OUTPUT"
+          else
+            cat "$RUNNER_TEMP/release-error.txt" >&2
+            exit 1
+          fi
+      - name: Stage the embedded Unity package
+        id: unitypackage
+        env:
+          ARCHIVE_NAME: ${{ steps.package.outputs.name }}
+        run: |
+          set -euo pipefail
+          project_path="$RUNNER_TEMP/unity-project"
+          package_path="$project_path/Packages/com.cqmhv.mobile-expression-converter"
+          mkdir -p "$package_path"
+          unzip -q "dist/$ARCHIVE_NAME.zip" -d "$package_path"
+          (
+            cd "$project_path"
+            find Packages -type f -name '*.meta' -print | LC_ALL=C sort > metaList
+          )
+          test -s "$project_path/metaList"
+          echo "project_path=$project_path" >> "$GITHUB_OUTPUT"
+      - name: Build the UnityPackage archive
+        uses: pCYSl5EDgo/create-unitypackage@b5c57408698b1fab8b3a84d4b67f767b8b7c0be9 # v1.2.3
+        with:
+          working-folder: ${{ steps.unitypackage.outputs.project_path }}
+          project-folder: .
+          package-path: ${{ steps.package.outputs.name }}.unitypackage
+          include-files: metaList
+      - name: Verify both package formats have identical files and GUIDs
+        env:
+          ARCHIVE_NAME: ${{ steps.package.outputs.name }}
+          UNITY_PROJECT: ${{ steps.unitypackage.outputs.project_path }}
+        run: python .github/scripts/validate_unitypackage.py "dist/$ARCHIVE_NAME.zip" "$UNITY_PROJECT/$ARCHIVE_NAME.unitypackage"
+      - name: Publish package assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.package.outputs.version }}
+          ARCHIVE_NAME: ${{ steps.package.outputs.name }}
+          EXISTING: ${{ steps.package.outputs.existing }}
+          UNITY_PROJECT: ${{ steps.unitypackage.outputs.project_path }}
+        run: |
+          set -euo pipefail
+          if [[ "$EXISTING" == "true" ]]; then
+            assets="$(gh release view "v$VERSION" --json assets --jq '.assets[].name')"
+            if ! grep -Fxq "$ARCHIVE_NAME.unitypackage" <<< "$assets"; then
+              gh release upload "v$VERSION" "$UNITY_PROJECT/$ARCHIVE_NAME.unitypackage"
+            fi
+          else
+            gh release create "v$VERSION" "dist/$ARCHIVE_NAME.zip" \
+              "$UNITY_PROJECT/$ARCHIVE_NAME.unitypackage" dist/package.json \
+              --target "$GITHUB_SHA" --title "Mobile Expression Converter $VERSION" \
+              --notes-file CHANGELOG.md
+          fi
   pages:
     needs: release
     permissions:
