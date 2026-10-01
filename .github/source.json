@@ -8,6 +8,7 @@
         "email": "185041488+CQMHV@users.noreply.github.com"
     },
     "description": "Adapt transparent facial effects for VRChat Android avatars with NDMF.",
+    "bannerUrl": "banner.png",
     "infoLink": {
         "text": "Source and documentation",
         "url": "https://github.com/CQMHV/vrc-mobile-expression-converter"
