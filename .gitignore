@@ -1,0 +1,10 @@
+/Library/
+/Temp/
+/Obj/
+/Logs/
+/UserSettings/
+/.vs/
+*.csproj
+*.sln
+.DS_Store
+Thumbs.db
