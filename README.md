@@ -2,9 +2,9 @@
 
 Adapt transparent facial effects for VRChat Android avatars with NDMF.
 
-Mobile Expression Converter (MEC) converts supported lilToon and Poiyomi face materials to `VRChat/Mobile/Particles/Multiply` during the avatar build. It also updates material-switching animations while preserving the mesh, UVs, bone weights, blendshapes, and material slot count and order.
+Mobile Expression Converter (MEC) converts supported lilToon and Poiyomi face materials to `VRChat/Mobile/Particles/Multiply` (default) or `VRChat/Mobile/Particles/Additive` during the avatar build. It also updates material-switching animations while preserving the mesh, UVs, bone weights, blendshapes, and material slot count and order.
 
-**This is an approximate conversion.** Blush, blue shading, and other dark overlays work well with Multiply. White tears and highlights may become faint or disappear.
+**This is an approximate conversion.** Blush, blue shading, and other dark overlays work well with Multiply. Additive can display white tears and highlights, but brightens the background and cannot reproduce dark overlays.
 
 ## Installation with VCC / ALCOM
 
@@ -38,7 +38,8 @@ These are tested versions, not a claim of compatibility with earlier versions. M
 
 1. In the Hierarchy, right-click the avatar root with a **VRC Avatar Descriptor** and choose **VRChat → Mobile Expression Converter**. You can also use Add Component.
 2. Check the **Face renderer** field. MEC first detects the descriptor's **LipSync → Face Mesh**, then a `Body` SkinnedMeshRenderer, case-insensitively. You can manually assign another renderer inside the same avatar.
-3. Select the **Android** build target and build your avatar normally. NDMF processes the build copy automatically.
+3. Choose **Processing mode**: **Multiply (recommended)** for blush and shadows, or **Additive** for bright tears and highlights. Existing components keep Multiply.
+4. Select the **Android** build target and build your avatar normally. NDMF processes the build copy automatically.
 
 The face field is filled when there is one valid candidate. An existing selection is preserved. Adding the component supports Undo and does not create duplicates. The Inspector supports English, Simplified Chinese, and Japanese.
 
@@ -56,7 +57,7 @@ The original Prefab, Mesh, Material, Texture, AnimationClip, and AnimatorControl
 
 ## Limitations
 
-Multiply uses alpha to control how strongly the texture color multiplies the rendered background. Alpha 0 leaves it unchanged; alpha 1 applies the full multiplication. It can darken the background, but cannot paint a bright white overlay. This is why white tears and highlights may become very faint or disappear. The original lilToon / Poiyomi lighting is not reproduced.
+Multiply uses alpha to control how strongly the texture color multiplies the rendered background. Alpha 0 leaves it unchanged; alpha 1 applies the full multiplication. It can darken the background, but cannot paint a bright white overlay. This is why white tears and highlights may become very faint or disappear. Additive uses `SrcAlpha One` blending to brighten the background. It can show bright white overlays, but cannot darken the background for shadows or dark blush, and bright areas may become overexposed. Both modes preserve the same supported color/alpha inputs; the original lilToon / Poiyomi lighting is not reproduced.
 
 - Unlock Poiyomi materials before conversion.
 - Unsupported Poiyomi settings, such as non-UV0 inputs, panning, stochastic sampling, dynamic alpha, special mask channels, and non-periodic mask UV mapping, report build errors.
@@ -65,7 +66,7 @@ Multiply uses alpha to control how strongly the texture color multiplies the ren
 - Inputs must be static Texture2D assets. A renderer outside the avatar or a material slot changed during the build reports an error.
 - The code also runs for iOS targets, but **iOS device behavior has not been tested**.
 
-Generated materials do not inherit the source material's `VRCFallback` override tag. Multiply passed the tested SDK's Android avatar shader whitelist check. See [VRChat Android content limitations](https://creators.vrchat.com/platforms/android/quest-content-limitations/) for platform restrictions.
+Generated materials do not inherit the source material's `VRCFallback` override tag. The selected output shader must pass the SDK Android avatar shader whitelist check. See [VRChat Android content limitations](https://creators.vrchat.com/platforms/android/quest-content-limitations/) for platform restrictions.
 
 ## Validation
 

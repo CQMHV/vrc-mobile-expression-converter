@@ -1,6 +1,14 @@
 # Validation and implementation notes
 
-## Current Multiply implementation
+## Version 1.1.0 processing modes
+
+On October 6, 2026, Unity 2022.3.22f1 compiled the updated runtime and editor assemblies in an isolated SDK 3.10.5 / NDMF 1.14.8 project. Full Android NDMF builds passed for both Multiply and Additive, including an animation-only material reached through a BlendTree. Static and animated materials used the selected shader and passed the SDK FindIllegalShaders check. Mesh/slot structure, UV transforms, unrelated opaque/null animation references, keyframe times, component GUIDs, and original resource serialization were preserved.
+
+New components and legacy component JSON without a processing-mode field defaulted to Multiply. Both mode values survived serialized-property assignment and JSON round trips. Windows builds skipped material conversion for both selections. A Unity GPU rendering check applied a half-alpha white overlay to a 0.2 background: Multiply remained 0.2, while Additive produced approximately 0.702. This checks the shader blend behavior, not device performance or visual equivalence on every avatar. Additive has not been tested on a physical device.
+
+The batch fixture and output logs are retained with the local release verification project. The fixture uses a minimal transparent lilToon-named shader to verify detection and build registration; it does not include VQT or the full lilToon / Poiyomi packages. Existing version 1.0.0 model and device checks remain applicable to the unchanged default Multiply conversion.
+
+## Version 1.0.0 Multiply validation
 
 - **October 1, 2026:** The Chocolat scene avatar was compared with blush, blue shading, and tears. Full NDMF + VQT processing passed with VQT running in both the Transforming and Optimizing phases; static and animated output materials remained Multiply.
 - Android plugin-pass checks covered lilToon / Poiyomi materials, nested BlendTrees, Override Controllers, multiple Animators sharing clips, and materials appearing only in animation.
@@ -44,7 +52,7 @@ Animation handling uses NDMF Animator Services. Conversion caches belong to the 
 
 | File | Responsibility |
 | --- | --- |
-| Runtime/MobileExpressionSettings.cs | Avatar component and face renderer selection |
+| Runtime/MobileExpressionSettings.cs | Avatar component, processing mode, and face renderer selection |
 | Editor/MobileExpressionPlugin.cs | NDMF stages, target selection, and static / animated material replacement |
 | Editor/ParticleTextureConverter.cs | Material detection, parameter validation, and texture preparation |
 | Editor/LilToonCompatibilityTexture.shader | Main color and alpha mask composition for lilToon / Poiyomi |
@@ -54,4 +62,4 @@ Animation handling uses NDMF Animator Services. Conversion caches belong to the 
 
 ## Historical implementation
 
-An early implementation used Alpha Blended output. It was replaced after confirming that the shader was not on the Android avatar whitelist. Its editor appearance and animation checks do not count as Android release validation. The current implementation and published validation use Multiply.
+An early implementation used Alpha Blended output. It was replaced after confirming that the shader was not on the Android avatar whitelist. Its editor appearance and animation checks do not count as Android release validation. Release 1.0.0 used Multiply; version 1.1.0 adds the supported mobile Additive shader as an optional output mode.

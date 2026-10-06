@@ -32,7 +32,10 @@ namespace MobileExpressionConverter.Editor
 
     internal sealed class MobileExpressionPlugin : Plugin<MobileExpressionPlugin>
     {
-        private const string OutputShaderName = "VRChat/Mobile/Particles/Multiply";
+        private static string OutputShaderName(ExpressionProcessingMode mode) =>
+            mode == ExpressionProcessingMode.Additive
+                ? "VRChat/Mobile/Particles/Additive"
+                : "VRChat/Mobile/Particles/Multiply";
 
         public override string QualifiedName => "com.mobile-expression-converter";
         public override string DisplayName => "Mobile Expression Converter";
@@ -118,11 +121,12 @@ namespace MobileExpressionConverter.Editor
             var state = context.GetState<BuildState>();
             if (state.Settings == null) return;
             ConvertAnimations(context);
-            var shader = Shader.Find(OutputShaderName);
+            var shaderName = OutputShaderName(state.Settings.processingMode);
+            var shader = Shader.Find(shaderName);
             if (shader == null)
             {
-                Fail(state.Settings, Texts.T("The mobile particle multiply shader is unavailable.",
-                    "移动端粒子 Multiply Shader 不可用。", "モバイル用パーティクル Multiply シェーダーが使用できません。"));
+                Fail(state.Settings, Texts.T("The selected mobile particle shader is unavailable: ",
+                    "所选移动端粒子 Shader 不可用：", "選択したモバイル用パーティクルシェーダーが使用できません: ") + shaderName);
                 return;
             }
             foreach (var source in state.Sources)
@@ -185,11 +189,12 @@ namespace MobileExpressionConverter.Editor
             if (state.Settings == null || !state.Settings.enabled || GetSelectionError(state.Settings) != null) return;
             var targets = new HashSet<SkinnedMeshRenderer>(FindTargetRenderers(state.Settings));
             if (targets.Count == 0) return;
-            var shader = Shader.Find(OutputShaderName);
+            var shaderName = OutputShaderName(state.Settings.processingMode);
+            var shader = Shader.Find(shaderName);
             if (shader == null)
             {
-                Fail(state.Settings, Texts.T("The mobile particle multiply shader is unavailable.",
-                    "移动端粒子 Multiply Shader 不可用。", "モバイル用パーティクル Multiply シェーダーが使用できません。"));
+                Fail(state.Settings, Texts.T("The selected mobile particle shader is unavailable: ",
+                    "所选移动端粒子 Shader 不可用：", "選択したモバイル用パーティクルシェーダーが使用できません: ") + shaderName);
                 return;
             }
             var services = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
@@ -265,7 +270,8 @@ namespace MobileExpressionConverter.Editor
         private static Material CreateMaterial(Material source, Shader shader, Texture2D prepared)
         {
             // Create a fresh material so desktop VRCFallback override tags are not inherited.
-            var result = new Material(shader) { name = source.name + " (Mobile Multiply)" };
+            var modeName = shader.name.Substring(shader.name.LastIndexOf('/') + 1);
+            var result = new Material(shader) { name = source.name + " (Mobile " + modeName + ")" };
             result.mainTexture = prepared != null ? prepared : FindMainTextureAsset(source);
             if (result.HasProperty("_Color"))
                 result.SetColor("_Color", prepared == null ? SourceTint(source) : Color.white);

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 — 2026-10-06
+
+- Add a processing-mode selector: Multiply (recommended, default) or Additive.
+- Apply the selected mode to static face materials and material-switching animations.
+- Preserve Multiply behavior for existing components and keep Windows builds unchanged.
+- Explain the selected mode in the English, Simplified Chinese, and Japanese Inspector.
+
 ## 1.0.0 — 2026-10-02
 
 - Initial VPM release of Mobile Expression Converter.
