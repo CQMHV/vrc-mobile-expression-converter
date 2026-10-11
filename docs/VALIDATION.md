@@ -1,5 +1,15 @@
 # Validation and implementation notes
 
+## Version 1.1.1 pipeline fix — October 11, 2026
+
+Unity 2022.3.22f1, SDK 3.10.5, NDMF 1.14.8, VQT 3.0.0, and Avatar Compressor 0.9.0 were used to check the revised build order. The actual NDMF resolver placed MEC's conversion in Transforming before VQT, and texture compression in Optimizing. There was no MEC Optimizing pass and no ordering cycle.
+
+All 12 synthetic Android NDMF cases passed: Multiply / Additive, no VQT component / VQT Transforming / VQT Optimizing, and no compressor component / compressor enabled. The plugin assemblies remained installed in every case; these were component-presence checks, not package-removal tests. Static and animation-only output textures retained ASTC 6x6 compression when the compressor was enabled. Without it, generated textures remained RGBA32 as expected. Shared BlendTree clips, null and opaque material keyframes, keyframe times, the mesh's blendshape, and source materials and animation references were preserved.
+
+A local SDK Android bundle was also built from a temporary copy of the saved MAYO scene. The saved avatar had no MEC component, so the test added one with the default Multiply mode only to the build copy. The resulting bundle was 10,365,495 bytes (9.885 MiB), below the 10 MiB download limit. The converted face overlay retained an ASTC 6x6 texture after compression and AAO processing. The processed face kept 135 blendshapes; jaw animation bindings referenced the renamed AAO shapes and produced approximately 20.03 mm of maximum world-space displacement at their recorded weights. SDK statistics reported 8 PhysBone components and 64 transforms. All 665 hashed source dependency files remained unchanged.
+
+These checks validate the local build, texture references, and measurable jaw animation geometry. They do not simulate OSC input or confirm face tracking on a headset. Windows packaging and physical-device rendering were not repeated for this fix. The batch fixture, resolver output, bundle, and logs are retained in the local project's BuildAudit directory; avatar assets are not distributed with this package.
+
 ## Version 1.1.0 processing modes
 
 On October 6, 2026, Unity 2022.3.22f1 compiled the updated runtime and editor assemblies in an isolated SDK 3.10.5 / NDMF 1.14.8 project. Full Android NDMF builds passed for both Multiply and Additive, including an animation-only material reached through a BlendTree. Static and animated materials used the selected shader and passed the SDK FindIllegalShaders check. Mesh/slot structure, UV transforms, unrelated opaque/null animation references, keyframe times, component GUIDs, and original resource serialization were preserved.
@@ -43,10 +53,12 @@ The fixture did not install VQT, Modular Avatar, lilToon, or Poiyomi. Its minima
 ## Build stages
 
 1. **Resolving:** Record the original transparent expression materials.
-2. **Transforming:** Process face material-switching animations after Modular Avatar / lilycalInventory and before VQT.
-3. **Optimizing:** Recheck animated material references after VQT, then replace static material slots.
+2. **Transforming:** Convert static face material slots and material-switching animations together, after Modular Avatar / lilycalInventory and before VQT.
+3. **Downstream optimization:** Texture optimizers can collect the generated textures and update both renderer and animation references. MEC does not restore its cached materials afterward.
 
-Animation handling uses NDMF Animator Services. Conversion caches belong to the current build. Replacements are scoped to the selected face renderer rather than replacing the same source material globally. NDMF collects generated materials and textures.
+Animation handling uses NDMF Animator Services. Conversion caches belong to the current build. Replacements are scoped to the selected face renderer rather than replacing the same source material globally. Generated textures are registered immediately with NDMF's asset saver, which gives texture optimizers a build-asset path. Original textures are not saved or modified by this step. NDMF collects generated materials and textures.
+
+VQT 3.0 preserves materials whose shaders are already allowed on mobile by default. An explicit material replacement remains the user's choice. Plugins that introduce face material-switching animations must run before MEC's Transforming pass; late creation of new animations is not covered by an additional restoration pass.
 
 ## Source layout
 

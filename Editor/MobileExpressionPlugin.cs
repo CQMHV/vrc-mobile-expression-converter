@@ -47,11 +47,10 @@ namespace MobileExpressionConverter.Editor
                 .AfterPlugin("nadena.dev.modular-avatar")
                 .AfterPlugin("jp.lilxyzw.lilycalinventory")
                 .BeforePlugin("com.github.kurotu.vrc-quest-tools")
-                .Run("Convert animated expression materials", ConvertAnimations);
-            InPhase(BuildPhase.Optimizing)
-                .AfterPlugin("nadena.dev.modular-avatar")
-                .AfterPlugin("com.github.kurotu.vrc-quest-tools")
                 .Run("Convert particle expressions", Convert);
+            // Generate static and animated textures before optimizers collect materials. VQT
+            // preserves supported mobile shaders; a late pass would restore cached materials
+            // and discard textures or material copies produced by downstream optimizers.
         }
 
         private static bool IsMobile =>
@@ -149,7 +148,7 @@ namespace MobileExpressionConverter.Editor
                     continue;
                 }
                 Material replacement;
-                if (!TryConvertMaterial(state, source.Material, renderer, shader, out replacement)) continue;
+                if (!TryConvertMaterial(context, state, source.Material, renderer, shader, out replacement)) continue;
                 // Replace exactly one existing slot; never assign a Mesh or change the array length.
                 materials[slot] = replacement;
                 renderer.sharedMaterials = materials;
@@ -160,7 +159,7 @@ namespace MobileExpressionConverter.Editor
                     "顔メッシュとマテリアル切替アニメーションに変換可能な lilToon または Poiyomi の透過マテリアルが見つかりません。"));
         }
 
-        private static bool TryConvertMaterial(BuildState state, Material source, UnityEngine.Object owner,
+        private static bool TryConvertMaterial(BuildContext context, BuildState state, Material source, UnityEngine.Object owner,
             Shader shader, out Material replacement)
         {
             if (state.ConvertedMaterials.TryGetValue(source, out replacement)) return true;
@@ -173,6 +172,9 @@ namespace MobileExpressionConverter.Editor
                 Fail(owner, source.name + ": " + reason);
                 return false;
             }
+            // Persist only the generated build texture. Texture optimizers may intentionally
+            // skip anonymous runtime textures to protect non-visual data from compression.
+            context.AssetSaver.SaveAsset(texture);
             replacement = CreateMaterial(source, shader, texture);
             state.ConvertedMaterials.Add(source, replacement);
             var approximation = ParticleTextureConverter.GetApproximationWarning(source);
@@ -227,10 +229,7 @@ namespace MobileExpressionConverter.Editor
                                 var source = material;
                                 if (!ParticleTextureConverter.IsTransparentExpression(source))
                                     source = ObjectRegistry.GetReference(material).Object as Material;
-                                // VQT may replace our generated particle material as well. Restore that exact
-                                // replacement on face bindings instead of baking an already converted material again.
-                                var generated = source != null && state.ConvertedMaterials.Values.Contains(source);
-                                if (!generated && !ParticleTextureConverter.IsTransparentExpression(source)) continue;
+                                if (!ParticleTextureConverter.IsTransparentExpression(source)) continue;
                                 if (slot >= renderer.sharedMaterials.Length || slot >= renderer.sharedMesh.subMeshCount)
                                 {
                                     Fail(renderer, Texts.T("The animated expression material slot does not exist: ",
@@ -238,8 +237,8 @@ namespace MobileExpressionConverter.Editor
                                         "マテリアル切替アニメーションのスロットが存在しません: ") + binding.propertyName);
                                     break;
                                 }
-                                Material replacement = source;
-                                if (!generated && !TryConvertMaterial(state, source, renderer, shader, out replacement)) continue;
+                                Material replacement;
+                                if (!TryConvertMaterial(context, state, source, renderer, shader, out replacement)) continue;
                                 if (rewritten[index].value == replacement) continue;
                                 rewritten[index].value = replacement;
                                 changed = true;

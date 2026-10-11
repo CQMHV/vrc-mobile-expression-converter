@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 — 2026-10-11
+
+- Convert static and animated expression materials together in the Transforming phase, before texture optimizers collect generated textures.
+- Register generated build textures with NDMF's asset saver so optimizers that skip anonymous runtime textures can process them.
+- Remove the late material restoration pass, which could reintroduce uncompressed textures after optimizers had cloned and compressed the materials.
+
 ## 1.1.0 — 2026-10-06
 
 - Add a processing-mode selector: Multiply (recommended, default) or Additive.

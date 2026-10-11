@@ -55,6 +55,8 @@ Opaque, Cutout, Poiyomi TransClipping, Additive, and Multiply source modes are n
 
 The original Prefab, Mesh, Material, Texture, AnimationClip, and AnimatorController assets are preserved. Windows builds skip conversion. Unrelated animation curves, opaque and null material references, and keyframe times are preserved.
 
+Static and animated expression materials are converted together in NDMF's Transforming phase, after Modular Avatar / lilycalInventory and before VQT. Generated textures remain available to downstream texture optimizers, and MEC preserves their optimized material references. VQT 3.0 keeps supported mobile shaders by default. Plugins that create face material-switching animations must run before this conversion pass.
+
 ## Limitations
 
 Multiply uses alpha to control how strongly the texture color multiplies the rendered background. Alpha 0 leaves it unchanged; alpha 1 applies the full multiplication. It can darken the background, but cannot paint a bright white overlay. This is why white tears and highlights may become very faint or disappear. Additive uses `SrcAlpha One` blending to brighten the background. It can show bright white overlays, but cannot darken the background for shadows or dark blush, and bright areas may become overexposed. Both modes preserve the same supported color/alpha inputs; the original lilToon / Poiyomi lighting is not reproduced.
