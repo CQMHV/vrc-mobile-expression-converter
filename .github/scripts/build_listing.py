@@ -29,6 +29,32 @@ def read_version(data, url, version):
     return manifest
 
 
+def read_dependency_package(listing, name):
+    package = listing["packages"][name]
+    if not package["versions"]:
+        raise ValueError(f"No upstream versions found for {name}")
+    for version, manifest in package["versions"].items():
+        if manifest["name"] != name or manifest["version"] != version:
+            raise ValueError(f"Upstream manifest does not match {name}@{version}")
+        if not manifest["url"].startswith("https://") or not re.fullmatch(
+                r"[a-fA-F0-9]{64}", manifest.get("zipSHA256", "")):
+            raise ValueError(f"Invalid upstream download metadata for {name}@{version}")
+    return package
+
+
+def fetch_dependency_packages():
+    packages = {}
+    for source in SOURCE.get("dependencyRepositories", []):
+        request = urllib.request.Request(source["url"], headers={"User-Agent": "MEC-VPM-Listing"})
+        with urllib.request.urlopen(request, timeout=60) as response:
+            listing = json.load(response)
+        for name in source["packages"]:
+            if name == PACKAGE or name in packages:
+                raise ValueError(f"Duplicate package in dependency repositories: {name}")
+            packages[name] = read_dependency_package(listing, name)
+    return packages
+
+
 def build(output, website):
     result = subprocess.run(
         ["gh", "api", f"repos/{REPOSITORY}/releases?per_page=100", "--paginate", "--slurp"],
@@ -60,6 +86,7 @@ def build(output, website):
         raise ValueError("The rendered official VPM website is incomplete")
     shutil.copytree(website, output, dirs_exist_ok=True)
     (output / ".nojekyll").write_text("")
+    packages = {PACKAGE: {"versions": versions}, **fetch_dependency_packages()}
     listing = {
         "name": SOURCE["name"],
         "id": SOURCE["id"],
@@ -68,10 +95,10 @@ def build(output, website):
         "authorUrl": SOURCE["author"]["url"],
         "description": SOURCE["description"],
         "infoLink": SOURCE["infoLink"],
-        "packages": {PACKAGE: {"versions": versions}}
+        "packages": packages
     }
     (output / "index.json").write_text(json.dumps(listing, indent=4) + "\n", encoding="utf-8")
-    print(f"Listed {len(versions)} published package version(s)")
+    print(f"Listed {len(versions)} published package version(s) and {len(packages) - 1} upstream dependency package(s)")
 
 
 if __name__ == "__main__":

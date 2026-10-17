@@ -5,6 +5,7 @@ import io
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 from pathlib import Path
 
@@ -48,6 +49,49 @@ class DistributionTests(unittest.TestCase):
                 archive.writestr("package.json", json.dumps(manifest))
             with self.assertRaises(ValueError):
                 build_listing.read_version(stream.getvalue(), self.manifest["url"], self.manifest["version"])
+
+
+class DependencyListingTests(unittest.TestCase):
+    def setUp(self):
+        self.name = "nadena.dev.ndmf"
+        self.manifest = {
+            "name": self.name,
+            "version": "1.14.8",
+            "url": "https://packages.vpm.nadena.dev/ndmf.zip",
+            "zipSHA256": "a" * 64,
+            "repo": "https://vpm.nadena.dev/vpm.json",
+            "dependencies": {"com.unity.collections": "2.1.4"}
+        }
+        self.listing = {"packages": {self.name: {"versions": {"1.14.8": self.manifest}}}}
+
+    def test_upstream_metadata_and_older_versions_are_preserved(self):
+        versions = self.listing["packages"][self.name]["versions"]
+        versions["1.14.7"] = dict(self.manifest, version="1.14.7")
+        result = build_listing.read_dependency_package(self.listing, self.name)
+        self.assertEqual(result, {"versions": versions})
+        self.assertEqual(result["versions"]["1.14.8"], self.manifest)
+
+    def test_missing_or_invalid_dependency_is_rejected(self):
+        with self.assertRaises(KeyError):
+            build_listing.read_dependency_package({"packages": {}}, self.name)
+        for field, value in [("name", "other.package"), ("version", "1.0.0"),
+                             ("url", "http://example.com/ndmf.zip"), ("zipSHA256", "bad")]:
+            with self.subTest(field=field):
+                invalid = {"packages": {self.name: {"versions": {
+                    "1.14.8": dict(self.manifest, **{field: value})}}}}
+                with self.assertRaises(ValueError):
+                    build_listing.read_dependency_package(invalid, self.name)
+
+    def test_fetch_uses_configured_source_and_propagates_failures(self):
+        source = {"dependencyRepositories": [{"url": "https://vpm.nadena.dev/vpm.json",
+                                               "packages": [self.name]}]}
+        with patch.object(build_listing, "SOURCE", source):
+            with patch("urllib.request.urlopen", return_value=io.BytesIO(json.dumps(self.listing).encode())) as fetch:
+                self.assertEqual(build_listing.fetch_dependency_packages(), self.listing["packages"])
+                self.assertEqual(fetch.call_args.args[0].full_url, source["dependencyRepositories"][0]["url"])
+            with patch("urllib.request.urlopen", side_effect=OSError("Upstream unavailable")):
+                with self.assertRaises(OSError):
+                    build_listing.fetch_dependency_packages()
 
 
 if __name__ == "__main__":

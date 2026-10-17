@@ -15,5 +15,11 @@
     },
     "repository": "CQMHV/vrc-mobile-expression-converter",
     "packageName": "com.cqmhv.mobile-expression-converter",
-    "githubRepos": ["CQMHV/vrc-mobile-expression-converter"]
+    "githubRepos": ["CQMHV/vrc-mobile-expression-converter"],
+    "dependencyRepositories": [
+        {
+            "url": "https://vpm.nadena.dev/vpm.json",
+            "packages": ["nadena.dev.ndmf"]
+        }
+    ]
 }

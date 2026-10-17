@@ -14,7 +14,7 @@ Open the [VPM installation page](https://cqmhv.github.io/vrc-mobile-expression-c
 https://cqmhv.github.io/vrc-mobile-expression-converter/index.json
 ```
 
-Ensure that the official VRChat and [NDMF repository](https://vpm.nadena.dev/vpm.json) are available to your package manager, then add **Mobile Expression Converter** to an Avatar project. The manifest declares the SDK and NDMF dependencies.
+Add **Mobile Expression Converter** to an Avatar project. The manifest declares the SDK and NDMF dependencies. This repository also lists NDMF from its [official repository](https://vpm.nadena.dev/vpm.json), preserving upstream download URLs and checksums, so a separate NDMF repository is not required for VPM installation. The official VRChat repository supplies the SDK.
 
 For manual installation, download the VPM ZIP from [Releases](https://github.com/CQMHV/vrc-mobile-expression-converter/releases/latest) and extract it to `Packages/com.cqmhv.mobile-expression-converter`. Install the required dependencies first. If upgrading from the old Assets distribution, remove `Assets/MobileExpressionConverter` before manual installation; VPM uses the legacy folder migration metadata to remove it automatically.
 
@@ -97,3 +97,5 @@ Copyright (c) 2026 CQMHV. Licensed under **GNU Affero General Public License ver
 Bump `package.json` and its release URL, update `CHANGELOG.md`, and run the **Release VPM package** workflow. Release assets are a VPM ZIP, an embedded UnityPackage, and `package.json`. Re-running the workflow for an existing version can add a missing UnityPackage using the already published ZIP without replacing published assets.
 
 The Pages workflow uses the official `vrchat-community/template-package` website and `vrchat-community/package-list-action` renderer, following VRCLearn's distribution approach. Listing metadata lives in `.github/source.json`. The listing builder reads published release ZIPs to generate an index with SHA-256 checksums, retaining earlier versions. Checksums are part of the VPM index; there is no separate checksum release asset.
+
+Each listing build also synchronizes the NDMF package entries from the official upstream index. The packages remain hosted upstream; NDMF binaries are not bundled into MEC. Upstream fetch or metadata validation failures stop deployment instead of publishing an incomplete dependency listing.
