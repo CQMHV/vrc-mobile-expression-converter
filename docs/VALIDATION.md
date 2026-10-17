@@ -1,6 +1,6 @@
 # Validation and implementation notes
 
-## Unreleased NDMF preview — October 18, 2026
+## Version 1.3.0 NDMF preview — October 18, 2026
 
 The runtime and editor sources compiled with Unity 2022.3.22f1 against the existing CQMHVPinkChocolat project's NDMF 1.14.8 and SDK assemblies. An existing-project batch run passed 18 preview checks using disposable objects in an untitled batch scene. It exercised the initial disabled preview default (subsequently changed to enabled), target-group discovery, two meshes sharing a source with separate Multiply / Additive outputs, shared generated textures, preservation of opaque/null slots and original renderer/material/texture references, shape-only resource reuse, material-triggered rebuilds, material-switch invalidation, idempotent disposal, disabled-preview behavior and preservation of the build target.
 

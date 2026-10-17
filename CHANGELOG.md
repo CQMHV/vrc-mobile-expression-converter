@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 — 2026-10-18
+
+- Group component installation and update checks under the Mobile Expression Converter menu. Reuse an existing component without resetting its settings.
+- Use one VPM update channel for every installation, including BOOTH imports, with VCC / ALCOM repository registration from the update window.
+- Add NDMF Scene view preview, enabled by default, for selected face meshes and their individual processing modes, on Android/iOS editor targets; PC targets display the original appearance.
+- Add an NDMF Preview toggle to NDMF preview controls and refresh the preview when settings or source resources change.
+- Share texture preparation across preview modes and dispose generated preview resources without changing source assets.
+
 ## 1.2.0 — 2026-10-18
 
 - Add a unified Face renderers list with one slot by default and controls to add or remove meshes.
