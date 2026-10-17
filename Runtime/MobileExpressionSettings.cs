@@ -12,7 +12,7 @@ namespace MobileExpressionConverter
         Additive = 1
     }
 
-    [AddComponentMenu("VRChat/Mobile Expression Converter")]
+    [AddComponentMenu("Mobile Expression Converter")]
     [DisallowMultipleComponent]
     public sealed class MobileExpressionSettings : MonoBehaviour, INDMFEditorOnly
     {

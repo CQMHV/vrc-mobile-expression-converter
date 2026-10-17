@@ -36,7 +36,7 @@ These are tested versions, not a claim of compatibility with earlier versions. M
 
 ## Usage
 
-1. In the Hierarchy, right-click the avatar root with a **VRC Avatar Descriptor** and choose **VRChat → Mobile Expression Converter**. You can also use Add Component.
+1. In the Hierarchy, right-click the avatar root with a **VRC Avatar Descriptor** and choose **Mobile Expression Converter → Install Component**. You can also use Add Component.
 2. Assign a mesh in the **Face renderers** list, which starts with one slot. Click **Add mesh** for more entries, or **−** to remove one. All assigned meshes must belong to the same avatar. Empty entries are ignored; if a mesh is listed more than once, its first entry is used.
 3. Choose **Processing mode** separately for each mesh: **Multiply (recommended)** for blush and shadows, or **Additive** for bright tears and highlights. New entries default to Multiply. Older configurations retain their existing mode on every assigned mesh. Removing an entry also removes its mode; the remaining mesh/mode pairs stay together.
 4. Select the **Android** build target and build your avatar normally. NDMF processes the build copy automatically.

@@ -9,7 +9,7 @@ namespace MobileExpressionConverter.Editor
 {
     internal static class MobileExpressionMenu
     {
-        private const string MenuPath = "GameObject/VRChat/Mobile Expression Converter";
+        private const string MenuPath = "GameObject/Mobile Expression Converter/Install Component";
 
         [MenuItem(MenuPath, true, 49)]
         private static bool Validate(MenuCommand command) => GetAvatar(command) != null;
