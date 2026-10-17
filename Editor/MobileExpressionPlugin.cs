@@ -18,8 +18,11 @@ namespace MobileExpressionConverter.Editor
     {
         internal MobileExpressionSettings Settings;
         internal readonly List<ExpressionSource> Sources = new List<ExpressionSource>();
-        internal readonly Dictionary<Material, Material> ConvertedMaterials = new Dictionary<Material, Material>();
-        internal readonly HashSet<Material> FailedMaterials = new HashSet<Material>();
+        internal readonly Dictionary<(Material, ExpressionProcessingMode), Material> ConvertedMaterials =
+            new Dictionary<(Material, ExpressionProcessingMode), Material>();
+        internal readonly HashSet<(Material, ExpressionProcessingMode)> FailedMaterials =
+            new HashSet<(Material, ExpressionProcessingMode)>();
+        internal readonly Dictionary<Material, Texture2D> PreparedTextures = new Dictionary<Material, Texture2D>();
     }
 
     internal sealed class ExpressionSource
@@ -96,22 +99,29 @@ namespace MobileExpressionConverter.Editor
 
         internal static string GetSelectionError(MobileExpressionSettings settings)
         {
-            if (settings.faceRenderer != null && !settings.faceRenderer.transform.IsChildOf(settings.transform))
-                return Texts.T("The selected face renderer must belong to this Avatar.",
-                    "指定的脸部网格必须位于当前 Avatar 根对象下。",
-                    "指定する顔レンダラーは、このアバター内にある必要があります。");
+            if (FindSelectedRenderers(settings).Any(renderer => !renderer.transform.IsChildOf(settings.transform)))
+                return Texts.T("All selected face renderers must belong to this Avatar.",
+                    "所有指定的脸部网格都必须位于当前 Avatar 根对象下。",
+                    "指定するすべての顔レンダラーは、このアバター内にある必要があります。");
             return null;
         }
+
+        internal static IEnumerable<SkinnedMeshRenderer> FindSelectedRenderers(MobileExpressionSettings settings) =>
+            new[] { settings.faceRenderer }
+                .Concat(settings.additionalFaceRenderers ?? Array.Empty<SkinnedMeshRenderer>())
+                .Where(renderer => renderer != null)
+                .Distinct();
 
         internal static IEnumerable<SkinnedMeshRenderer> FindTargetRenderers(MobileExpressionSettings settings)
         {
             if (GetSelectionError(settings) != null) return Enumerable.Empty<SkinnedMeshRenderer>();
-            if (settings.faceRenderer != null) return new[] { settings.faceRenderer };
+            var selected = FindSelectedRenderers(settings).ToArray();
+            if (selected.Length != 0) return selected;
             var descriptor = settings.GetComponent<VRCAvatarDescriptor>();
             var face = descriptor != null ? descriptor.VisemeSkinnedMesh : null;
             if (face != null && face.sharedMesh != null && face.transform.IsChildOf(settings.transform))
                 return new[] { face };
-            return FindBodyRenderers(settings.gameObject);
+            return FindBodyRenderers(settings.gameObject).Where(renderer => renderer.sharedMesh != null).Take(1);
         }
 
         private static void Convert(BuildContext context)
@@ -120,14 +130,6 @@ namespace MobileExpressionConverter.Editor
             var state = context.GetState<BuildState>();
             if (state.Settings == null) return;
             ConvertAnimations(context);
-            var shaderName = OutputShaderName(state.Settings.processingMode);
-            var shader = Shader.Find(shaderName);
-            if (shader == null)
-            {
-                Fail(state.Settings, Texts.T("The selected mobile particle shader is unavailable: ",
-                    "所选移动端粒子 Shader 不可用：", "選択したモバイル用パーティクルシェーダーが使用できません: ") + shaderName);
-                return;
-            }
             foreach (var source in state.Sources)
             {
                 var renderer = source.Renderer;
@@ -148,7 +150,8 @@ namespace MobileExpressionConverter.Editor
                     continue;
                 }
                 Material replacement;
-                if (!TryConvertMaterial(context, state, source.Material, renderer, shader, out replacement)) continue;
+                if (!TryConvertMaterial(context, state, source.Material, renderer,
+                        state.Settings.GetProcessingMode(renderer), out replacement)) continue;
                 // Replace exactly one existing slot; never assign a Mesh or change the array length.
                 materials[slot] = replacement;
                 renderer.sharedMaterials = materials;
@@ -160,25 +163,39 @@ namespace MobileExpressionConverter.Editor
         }
 
         private static bool TryConvertMaterial(BuildContext context, BuildState state, Material source, UnityEngine.Object owner,
-            Shader shader, out Material replacement)
+            ExpressionProcessingMode mode, out Material replacement)
         {
-            if (state.ConvertedMaterials.TryGetValue(source, out replacement)) return true;
-            if (state.FailedMaterials.Contains(source)) return false;
-            Texture2D texture;
-            string reason;
-            if (!ParticleTextureConverter.TryPrepareTexture(source, out texture, out reason))
+            var key = (source, mode);
+            if (state.ConvertedMaterials.TryGetValue(key, out replacement)) return true;
+            if (state.FailedMaterials.Contains(key)) return false;
+            var shaderName = OutputShaderName(mode);
+            var shader = Shader.Find(shaderName);
+            if (shader == null)
             {
-                state.FailedMaterials.Add(source);
-                Fail(owner, source.name + ": " + reason);
+                state.FailedMaterials.Add(key);
+                Fail(owner, Texts.T("The selected mobile particle shader is unavailable: ",
+                    "所选移动端粒子 Shader 不可用：", "選択したモバイル用パーティクルシェーダーが使用できません: ") + shaderName);
                 return false;
             }
-            // Persist only the generated build texture. Texture optimizers may intentionally
-            // skip anonymous runtime textures to protect non-visual data from compression.
-            context.AssetSaver.SaveAsset(texture);
+            Texture2D texture;
+            if (!state.PreparedTextures.TryGetValue(source, out texture))
+            {
+                string reason;
+                if (!ParticleTextureConverter.TryPrepareTexture(source, out texture, out reason))
+                {
+                    state.FailedMaterials.Add(key);
+                    Fail(owner, source.name + ": " + reason);
+                    return false;
+                }
+                // Both modes share the prepared texture. Persist it so downstream texture
+                // optimizers can process it instead of treating it as anonymous runtime data.
+                context.AssetSaver.SaveAsset(texture);
+                state.PreparedTextures.Add(source, texture);
+                var approximation = ParticleTextureConverter.GetApproximationWarning(source);
+                if (approximation != null) Warn(owner, source.name + ": " + approximation);
+            }
             replacement = CreateMaterial(source, shader, texture);
-            state.ConvertedMaterials.Add(source, replacement);
-            var approximation = ParticleTextureConverter.GetApproximationWarning(source);
-            if (approximation != null) Warn(owner, source.name + ": " + approximation);
+            state.ConvertedMaterials.Add(key, replacement);
             return true;
         }
 
@@ -191,14 +208,6 @@ namespace MobileExpressionConverter.Editor
             if (state.Settings == null || !state.Settings.enabled || GetSelectionError(state.Settings) != null) return;
             var targets = new HashSet<SkinnedMeshRenderer>(FindTargetRenderers(state.Settings));
             if (targets.Count == 0) return;
-            var shaderName = OutputShaderName(state.Settings.processingMode);
-            var shader = Shader.Find(shaderName);
-            if (shader == null)
-            {
-                Fail(state.Settings, Texts.T("The selected mobile particle shader is unavailable: ",
-                    "所选移动端粒子 Shader 不可用：", "選択したモバイル用パーティクルシェーダーが使用できません: ") + shaderName);
-                return;
-            }
             var services = context.ActivateExtensionContextRecursive<AnimatorServicesContext>();
             try
             {
@@ -238,7 +247,8 @@ namespace MobileExpressionConverter.Editor
                                     break;
                                 }
                                 Material replacement;
-                                if (!TryConvertMaterial(context, state, source, renderer, shader, out replacement)) continue;
+                                if (!TryConvertMaterial(context, state, source, renderer,
+                                        state.Settings.GetProcessingMode(renderer), out replacement)) continue;
                                 if (rewritten[index].value == replacement) continue;
                                 rewritten[index].value = replacement;
                                 changed = true;

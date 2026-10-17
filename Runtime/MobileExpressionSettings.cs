@@ -16,10 +16,28 @@ namespace MobileExpressionConverter
     [DisallowMultipleComponent]
     public sealed class MobileExpressionSettings : MonoBehaviour, INDMFEditorOnly
     {
-        [Tooltip("Optional face renderer inside this Avatar. Leave empty to use the Avatar Descriptor Face Mesh, then fall back to Body (case-insensitive).")]
+        [Tooltip("First entry in the Face renderers list. Leave all entries empty for Avatar Descriptor / Body detection.")]
         public SkinnedMeshRenderer faceRenderer;
 
-        [Tooltip("Multiply is recommended for blush and shadows. Additive brightens the background for tears and highlights.")]
+        [Tooltip("Remaining entries in the Face renderers list. All assigned renderers are processed together; empty and duplicate entries are ignored.")]
+        public SkinnedMeshRenderer[] additionalFaceRenderers = new SkinnedMeshRenderer[0];
+
+        [Tooltip("Processing mode for the first mesh. Also preserves the mode of older mesh entries without a saved per-mesh mode.")]
         public ExpressionProcessingMode processingMode = ExpressionProcessingMode.Multiply;
+
+        [HideInInspector]
+        public ExpressionProcessingMode[] additionalProcessingModes = new ExpressionProcessingMode[0];
+
+        public ExpressionProcessingMode GetProcessingMode(SkinnedMeshRenderer renderer)
+        {
+            if (renderer == null || renderer == faceRenderer || additionalFaceRenderers == null) return processingMode;
+            for (var index = 0; index < additionalFaceRenderers.Length; index++)
+            {
+                if (additionalFaceRenderers[index] != renderer) continue;
+                return additionalProcessingModes != null && index < additionalProcessingModes.Length
+                    ? additionalProcessingModes[index] : processingMode;
+            }
+            return processingMode;
+        }
     }
 }

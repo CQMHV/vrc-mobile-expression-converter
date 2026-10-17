@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0 — 2026-10-18
+
+- Add a unified Face renderers list with one slot by default and controls to add or remove meshes.
+- Select Multiply (recommended) or Additive independently for each mesh, including static materials and material-switching animations. New entries default to Multiply.
+- Keep mesh/mode pairs together when removing entries and preserve older configurations' existing modes.
+- Cache converted materials by source and mode so meshes sharing a material can use different shaders while reusing the prepared texture.
+- Preserve existing single-renderer selections and allow the additional list to be used independently.
+- Ignore empty and duplicate entries and validate every selected renderer. Automatic detection selects one mesh by default; additional meshes are added manually.
+
 ## 1.1.1 — 2026-10-11
 
 - Convert static and animated expression materials together in the Transforming phase, before texture optimizers collect generated textures.

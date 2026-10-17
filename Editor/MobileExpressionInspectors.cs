@@ -20,14 +20,102 @@ namespace MobileExpressionConverter.Editor
 
         internal static void FillDetectedRenderer(MobileExpressionSettings settings)
         {
-            if (settings == null || settings.faceRenderer != null || EditorUtility.IsPersistent(settings)
+            if (settings == null || MobileExpressionPlugin.FindSelectedRenderers(settings).Any() || EditorUtility.IsPersistent(settings)
                 || EditorApplication.isPlayingOrWillChangePlaymode) return;
             var candidates = MobileExpressionPlugin.FindTargetRenderers(settings)
-                .Where(r => r.sharedMesh != null).Take(2).ToArray();
-            if (candidates.Length != 1) return;
+                .Where(r => r.sharedMesh != null).ToArray();
+            if (candidates.Length == 0) return;
             var serialized = new SerializedObject(settings);
             serialized.FindProperty("faceRenderer").objectReferenceValue = candidates[0];
+            var additional = serialized.FindProperty("additionalFaceRenderers");
+            additional.arraySize = candidates.Length - 1;
+            for (var index = 1; index < candidates.Length; index++)
+                additional.GetArrayElementAtIndex(index - 1).objectReferenceValue = candidates[index];
+            EnsureProcessingModes(serialized);
             serialized.ApplyModifiedProperties();
+        }
+
+        internal static void EnsureProcessingModes(SerializedObject serialized)
+        {
+            var modes = serialized.FindProperty("additionalProcessingModes");
+            var previousSize = modes.arraySize;
+            var count = serialized.FindProperty("additionalFaceRenderers").arraySize;
+            if (modes.arraySize != count) modes.arraySize = count;
+            for (var index = previousSize; index < modes.arraySize; index++)
+                modes.GetArrayElementAtIndex(index).intValue = serialized.FindProperty("processingMode").intValue;
+        }
+
+        internal static void AddFaceRenderer(SerializedObject serialized)
+        {
+            EnsureProcessingModes(serialized);
+            var additional = serialized.FindProperty("additionalFaceRenderers");
+            var index = additional.arraySize;
+            additional.arraySize++;
+            additional.GetArrayElementAtIndex(index).objectReferenceValue = null;
+            var modes = serialized.FindProperty("additionalProcessingModes");
+            modes.arraySize = additional.arraySize;
+            modes.GetArrayElementAtIndex(index).intValue = (int)ExpressionProcessingMode.Multiply;
+        }
+
+        internal static void RemoveFaceRenderer(SerializedObject serialized, int index)
+        {
+            EnsureProcessingModes(serialized);
+            var additional = serialized.FindProperty("additionalFaceRenderers");
+            var modes = serialized.FindProperty("additionalProcessingModes");
+            if (additional.arraySize == 0) return;
+            if (index == 0)
+            {
+                serialized.FindProperty("faceRenderer").objectReferenceValue =
+                    additional.GetArrayElementAtIndex(0).objectReferenceValue;
+                serialized.FindProperty("processingMode").intValue = modes.GetArrayElementAtIndex(0).intValue;
+            }
+            var additionalIndex = index == 0 ? 0 : index - 1;
+            for (var next = additionalIndex + 1; next < additional.arraySize; next++)
+            {
+                additional.GetArrayElementAtIndex(next - 1).objectReferenceValue =
+                    additional.GetArrayElementAtIndex(next).objectReferenceValue;
+                modes.GetArrayElementAtIndex(next - 1).intValue = modes.GetArrayElementAtIndex(next).intValue;
+            }
+            additional.arraySize--;
+            modes.arraySize--;
+        }
+
+        private static void DrawProcessingMode(SerializedProperty property)
+        {
+            EditorGUI.BeginChangeCheck();
+            var mode = EditorGUILayout.Popup(
+                Texts.T("Processing mode", "处理模式", "処理モード"), property.intValue,
+                new[] { Texts.T("Multiply (recommended)", "Multiply（推荐）", "Multiply（推奨）"), "Additive" });
+            if (EditorGUI.EndChangeCheck()) property.intValue = mode;
+        }
+
+        private void DrawFaceRenderers()
+        {
+            var primary = serializedObject.FindProperty("faceRenderer");
+            var additional = serializedObject.FindProperty("additionalFaceRenderers");
+            var count = additional.arraySize + 1;
+            var removeIndex = -1;
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField(Texts.T("Face renderers", "脸部网格", "顔レンダラー"), EditorStyles.boldLabel);
+                for (var index = 0; index < count; index++)
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        var property = index == 0 ? primary : additional.GetArrayElementAtIndex(index - 1);
+                        EditorGUILayout.PropertyField(property, new GUIContent(
+                            Texts.T("Mesh ", "网格 ", "メッシュ ") + (index + 1)));
+                        using (new EditorGUI.DisabledScope(count == 1))
+                            if (GUILayout.Button(new GUIContent("−", Texts.T("Remove mesh", "移除网格", "メッシュを削除")), GUILayout.Width(24)))
+                                removeIndex = index;
+                    }
+                    DrawProcessingMode(index == 0 ? serializedObject.FindProperty("processingMode") :
+                        serializedObject.FindProperty("additionalProcessingModes").GetArrayElementAtIndex(index - 1));
+                }
+                if (removeIndex >= 0) RemoveFaceRenderer(serializedObject, removeIndex);
+                if (GUILayout.Button(Texts.T("Add mesh", "添加网格", "メッシュを追加")))
+                    AddFaceRenderer(serializedObject);
+            }
         }
 
         public override void OnInspectorGUI()
@@ -35,44 +123,32 @@ namespace MobileExpressionConverter.Editor
             LanguageSwitcher.DrawImmediate();
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(Texts.T(
-                "Add this component to the Avatar root. Android/iOS builds convert transparent lilToon and Poiyomi face materials using the selected processing mode. PC builds are unaffected.",
-                "将此组件添加到 Avatar 根对象。构建 Android/iOS 版本时，会按所选处理模式转换脸部的 lilToon 和 Poiyomi 透明材质。PC 版本不受影响。",
-                "アバターのルートに追加してください。Android/iOS ビルド時に顔の lilToon・Poiyomi 透過マテリアルを選択した処理モードで変換します。PC 版には影響しません。"),
+                "Add this component to the Avatar root. Android/iOS builds convert transparent lilToon and Poiyomi face materials using each mesh's processing mode. PC builds are unaffected.",
+                "将此组件添加到 Avatar 根对象。构建 Android/iOS 版本时，会按各网格的处理模式转换脸部的 lilToon 和 Poiyomi 透明材质。PC 版本不受影响。",
+                "アバターのルートに追加してください。Android/iOS ビルド時に顔の lilToon・Poiyomi 透過マテリアルをメッシュごとの処理モードで変換します。PC 版には影響しません。"),
                 MessageType.Info);
             serializedObject.Update();
-            var processingMode = serializedObject.FindProperty("processingMode");
-            EditorGUI.BeginChangeCheck();
-            var selectedMode = EditorGUILayout.Popup(
-                Texts.T("Processing mode", "处理模式", "処理モード"),
-                processingMode.intValue,
-                new[] { Texts.T("Multiply (recommended)", "Multiply（推荐）", "Multiply（推奨）"), "Additive" });
-            if (EditorGUI.EndChangeCheck()) processingMode.intValue = selectedMode;
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("faceRenderer"),
-                new GUIContent(Texts.T("Face renderer", "脸部网格", "顔レンダラー"),
-                    Texts.T("Assign a SkinnedMeshRenderer inside this Avatar to process only that renderer.",
-                        "拖入当前 Avatar 内的 SkinnedMeshRenderer，指定后仅处理该网格。",
-                        "このアバター内の SkinnedMeshRenderer を指定すると、そのレンダラーのみ処理します。")));
+            EnsureProcessingModes(serializedObject);
+            DrawFaceRenderers();
             serializedObject.ApplyModifiedProperties();
             var settings = (MobileExpressionSettings)target;
             EditorGUILayout.HelpBox(Texts.T(
-                "The face mesh is detected from the Avatar Descriptor, then Body. You can assign another mesh here.",
-                "优先识别 Avatar Descriptor 的脸部网格，其次识别 Body；也可手动指定其他网格。",
-                "Avatar Descriptor の顔メッシュ、次に Body を検出します。別のメッシュを手動で指定することもできます。"),
+                "Detection selects one face mesh by default. Add other meshes as needed and choose a processing mode for each mesh.",
+                "默认自动识别一个脸部网格。可按需添加其他网格，并分别选择处理模式。",
+                "初期状態では顔メッシュを1つ検出します。必要に応じて追加し、メッシュごとに処理モードを選択できます。"),
                 MessageType.None);
-            EditorGUILayout.HelpBox(settings.processingMode == ExpressionProcessingMode.Additive ? Texts.T(
-                "Additive brightens the background and can show white tears and highlights. Dark blush and shadows cannot be reproduced; bright areas may become overexposed.",
-                "Additive 提亮底色，可显示白色眼泪和高光。无法还原压暗的腮红或阴影，亮部可能过曝。",
-                "Additive は背景を明るくし、白い涙やハイライトを表示できます。暗い頬染めや影は再現できず、明部が白飛びする場合があります。") : Texts.T(
-                "Multiply preserves alpha masks and darkens the background. Blush and shadows are retained approximately; white highlights such as tears become faint or disappear.",
-                "Multiply 保留透明遮罩并压暗底色。腮红和阴影可近似保留，眼泪等白色高光会变淡或消失。",
-                "Multiply はアルファマスクを維持し、背景を暗くします。頬染めや影を近似的に再現しますが、涙などの白いハイライトは薄くなるか、消える場合があります。"),
+            EditorGUILayout.HelpBox(Texts.T(
+                "Multiply is recommended for blush and shadows. Additive brightens the background for white tears and highlights; it cannot darken overlays and may overexpose bright areas.",
+                "Multiply 推荐用于腮红和阴影；Additive 用于白色眼泪和高光，无法还原暗色叠加，亮部可能过曝。",
+                "Multiply は頬染めや影に推奨します。Additive は白い涙やハイライト向けですが、暗い表現は再現できず、明部が白飛びする場合があります。"),
                 MessageType.Info);
-            if (settings.faceRenderer == null)
+            var hasSelection = MobileExpressionPlugin.FindSelectedRenderers(settings).Any();
+            if (!hasSelection)
                 EditorGUILayout.HelpBox(Texts.T(
                     "No face mesh is assigned. Drag the correct mesh here, or click Detect face mesh to try again.",
                     "尚未填写脸部网格。请拖入正确的网格，或点击“识别脸部网格”重试。",
                     "顔メッシュが未設定です。正しいメッシュをドラッグするか、「顔メッシュを検出」で再試行してください。"), MessageType.Warning);
-            if (settings.faceRenderer == null && GUILayout.Button(Texts.T(
+            if (!hasSelection && GUILayout.Button(Texts.T(
                 "Detect face mesh", "识别脸部网格", "顔メッシュを検出")))
                 FillDetectedRenderer(settings);
             var error = MobileExpressionPlugin.GetSelectionError(settings);

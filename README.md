@@ -32,20 +32,20 @@ The package includes the component source, documentation, and license. It does n
 
 These are tested versions, not a claim of compatibility with earlier versions. Modular Avatar is not a direct dependency. The source lilToon or Poiyomi shaders must be available in your project; MEC does not directly reference their editor assemblies.
 
-**VRCQuestTools (VQT)** is optional. It can convert the rest of your avatar's materials. MEC only adapts the selected face renderer and does not make the entire avatar Android-compatible by itself.
+**VRCQuestTools (VQT)** is optional. It can convert the rest of your avatar's materials. MEC only adapts the selected face renderers and does not make the entire avatar Android-compatible by itself.
 
 ## Usage
 
 1. In the Hierarchy, right-click the avatar root with a **VRC Avatar Descriptor** and choose **VRChat → Mobile Expression Converter**. You can also use Add Component.
-2. Check the **Face renderer** field. MEC first detects the descriptor's **LipSync → Face Mesh**, then a `Body` SkinnedMeshRenderer, case-insensitively. You can manually assign another renderer inside the same avatar.
-3. Choose **Processing mode**: **Multiply (recommended)** for blush and shadows, or **Additive** for bright tears and highlights. Existing components keep Multiply.
+2. Assign a mesh in the **Face renderers** list, which starts with one slot. Click **Add mesh** for more entries, or **−** to remove one. All assigned meshes must belong to the same avatar. Empty entries are ignored; if a mesh is listed more than once, its first entry is used.
+3. Choose **Processing mode** separately for each mesh: **Multiply (recommended)** for blush and shadows, or **Additive** for bright tears and highlights. New entries default to Multiply. Older configurations retain their existing mode on every assigned mesh. Removing an entry also removes its mode; the remaining mesh/mode pairs stay together.
 4. Select the **Android** build target and build your avatar normally. NDMF processes the build copy automatically.
 
-The face field is filled when there is one valid candidate. An existing selection is preserved. Adding the component supports Undo and does not create duplicates. The Inspector supports English, Simplified Chinese, and Japanese.
+When no meshes are assigned, MEC detects one mesh: the descriptor's **LipSync → Face Mesh**, or the first valid `Body` SkinnedMeshRenderer, case-insensitively, including inactive children. Add any other meshes manually. An existing manual selection is preserved, and older components keep their original single-mesh selection. Adding the component and editing the renderer list support Undo. The Inspector supports English, Simplified Chinese, and Japanese.
 
 ## Supported scope
 
-- Transparent lilToon materials and Poiyomi **Fade / Transparent** materials on the selected face renderer.
+- Transparent lilToon materials and Poiyomi **Fade / Transparent** materials on all selected face renderers.
 - Material-switching animations, including nested BlendTrees, Override Controllers, and materials used only in animations.
 - Main texture color and alpha, static alpha masks, and supported UV transforms.
 - lilToon alpha mask modes 0–4, strength, and offset.
@@ -56,6 +56,8 @@ Opaque, Cutout, Poiyomi TransClipping, Additive, and Multiply source modes are n
 The original Prefab, Mesh, Material, Texture, AnimationClip, and AnimatorController assets are preserved. Windows builds skip conversion. Unrelated animation curves, opaque and null material references, and keyframe times are preserved.
 
 Static and animated expression materials are converted together in NDMF's Transforming phase, after Modular Avatar / lilycalInventory and before VQT. Generated textures remain available to downstream texture optimizers, and MEC preserves their optimized material references. VQT 3.0 keeps supported mobile shaders by default. Plugins that create face material-switching animations must run before this conversion pass.
+
+Meshes can use different modes even when they share a source material. MEC caches output materials by source and mode, while sharing the prepared texture between modes. Material-switching animations use the mode of the renderer they target.
 
 ## Limitations
 

@@ -1,5 +1,17 @@
 # Validation and implementation notes
 
+## Version 1.2.0 multiple face renderers
+
+On October 17, 2026, the runtime and editor sources compiled together with Unity 2022.3.22f1 Roslyn against the connected Test-Avatar project's assemblies. Thirteen checks ran in that editor using temporary objects in a preview scene: legacy single-renderer JSON, null additional arrays, multiple explicit selections, inactive meshes, empty and duplicate entries, additional-only selection, descriptor / multiple Body detection, serialized-property updates and JSON round trips, rejection of external renderers, and reference remapping in cloned avatars for both processing modes. Preview objects were removed, and the user's active scene kept its original root count and dirty state. No independent Unity test project was created.
+
+These checks exercised renderer selection and serialization on the Windows editor target. The existing static-material collector and animated-material filter both consume the shared target selection; Android build processing and physical-device rendering were not repeated for this change.
+
+After installation into Test-Avatar, Unity compiled the normal runtime and editor assemblies without console errors. Six further preview-scene checks exercised the unified Inspector list: one slot by default, adding an empty slot while preserving the first selection, avoiding duplicated references in new slots, removing the first mesh without changing the remaining order, removing another mesh, and retaining at least one slot. Existing serialized renderer fields remain unchanged so earlier selections survive the UI update.
+
+The default was then restricted to one automatically detected mesh. Three checks against the installed assemblies confirmed that Body fallback skips meshes without mesh data and selects only the first valid mesh, Inspector detection fills one slot, and manually adding an inactive second mesh still selects both meshes. Extra meshes are selected explicitly, and are not automatically added to the default list.
+
+Per-mesh modes were checked in the installed Test-Avatar package on both Windows and Android editor targets using preview-scene objects and an NDMF BuildContext with a NullAssetSaver. Ten Windows checks covered legacy global-mode fallback, independent mode initialization, default Multiply for added rows, paired removal, JSON serialization, conversion skipping, and source/scene preservation. Twenty Android checks exercised the actual MEC Resolve and Convert passes in both Multiply/Additive orders. Two meshes shared a source material, an animation-only material, and a BlendTree controller under different Animator roots. Each mesh received its own static and animated output shader, prepared textures were shared between modes, opaque/null keyframes and their times were preserved, and unselected mesh curves stayed unchanged. NDMF reported no conversion errors, and the source materials, clip, controller and user scene state were unchanged. This pass-level check did not build an Android application or repeat device testing.
+
 ## Version 1.1.1 pipeline fix — October 11, 2026
 
 Unity 2022.3.22f1, SDK 3.10.5, NDMF 1.14.8, VQT 3.0.0, and Avatar Compressor 0.9.0 were used to check the revised build order. The actual NDMF resolver placed MEC's conversion in Transforming before VQT, and texture compression in Optimizing. There was no MEC Optimizing pass and no ordering cycle.
