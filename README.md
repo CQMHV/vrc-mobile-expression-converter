@@ -43,6 +43,8 @@ These are tested versions, not a claim of compatibility with earlier versions. M
 
 When no meshes are assigned, MEC detects one mesh: the descriptor's **LipSync → Face Mesh**, or the first valid `Body` SkinnedMeshRenderer, case-insensitively, including inactive children. Add any other meshes manually. An existing manual selection is preserved, and older components keep their original single-mesh selection. Adding the component and editing the renderer list support Undo. The Inspector supports English, Simplified Chinese, and Japanese.
 
+To check for a newer stable version, choose **Mobile Expression Converter → Check for Updates** from the Hierarchy context menu or GameObject menu. All editions, including BOOTH imports, use the same VPM repository. The window shows installed and latest versions and provides **Add repository to VCC / ALCOM** and **Copy repository URL**. Add the repository once, then select your project in VCC / ALCOM and install or update **Mobile Expression Converter**. The client manages the package update and dependencies.
+
 ## Supported scope
 
 - Transparent lilToon materials and Poiyomi **Fade / Transparent** materials on all selected face renderers.

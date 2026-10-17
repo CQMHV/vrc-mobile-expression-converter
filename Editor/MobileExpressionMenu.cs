@@ -27,6 +27,9 @@ namespace MobileExpressionConverter.Editor
             EditorGUIUtility.PingObject(settings);
         }
 
+        [MenuItem("GameObject/Mobile Expression Converter/Check for Updates", false, 50)]
+        private static void CheckForUpdates() => MobileExpressionUpdateWindow.Open();
+
         private static GameObject GetAvatar(MenuCommand command)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return null;
