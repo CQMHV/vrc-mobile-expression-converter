@@ -35,7 +35,7 @@ namespace MobileExpressionConverter.Editor
 
     internal sealed class MobileExpressionPlugin : Plugin<MobileExpressionPlugin>
     {
-        private static string OutputShaderName(ExpressionProcessingMode mode) =>
+        internal static string OutputShaderName(ExpressionProcessingMode mode) =>
             mode == ExpressionProcessingMode.Additive
                 ? "VRChat/Mobile/Particles/Additive"
                 : "VRChat/Mobile/Particles/Multiply";
@@ -50,15 +50,17 @@ namespace MobileExpressionConverter.Editor
                 .AfterPlugin("nadena.dev.modular-avatar")
                 .AfterPlugin("jp.lilxyzw.lilycalinventory")
                 .BeforePlugin("com.github.kurotu.vrc-quest-tools")
-                .Run("Convert particle expressions", Convert);
+                .Run("Convert particle expressions", Convert)
+                .PreviewingWith(new MobileExpressionPreview());
             // Generate static and animated textures before optimizers collect materials. VQT
             // preserves supported mobile shaders; a late pass would restore cached materials
             // and discard textures or material copies produced by downstream optimizers.
         }
 
-        private static bool IsMobile =>
-            EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ||
-            EditorUserBuildSettings.activeBuildTarget == BuildTarget.iOS;
+        internal static bool IsMobileTarget(BuildTarget target) =>
+            target == BuildTarget.Android || target == BuildTarget.iOS;
+
+        private static bool IsMobile => IsMobileTarget(EditorUserBuildSettings.activeBuildTarget);
 
         private static void Resolve(BuildContext context)
         {
@@ -276,7 +278,7 @@ namespace MobileExpressionConverter.Editor
                     binding.propertyName.Length - prefix.Length - 1), out slot) && slot >= 0;
         }
 
-        private static Material CreateMaterial(Material source, Shader shader, Texture2D prepared)
+        internal static Material CreateMaterial(Material source, Shader shader, Texture2D prepared)
         {
             // Create a fresh material so desktop VRCFallback override tags are not inherited.
             var modeName = shader.name.Substring(shader.name.LastIndexOf('/') + 1);

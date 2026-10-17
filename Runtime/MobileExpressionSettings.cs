@@ -25,6 +25,9 @@ namespace MobileExpressionConverter
         [Tooltip("Processing mode for the first mesh. Also preserves the mode of older mesh entries without a saved per-mesh mode.")]
         public ExpressionProcessingMode processingMode = ExpressionProcessingMode.Multiply;
 
+        [Tooltip("Preview mobile expressions in NDMF without changing the original avatar or the build target.")]
+        public bool previewInEditor = true;
+
         [HideInInspector]
         public ExpressionProcessingMode[] additionalProcessingModes = new ExpressionProcessingMode[0];
 

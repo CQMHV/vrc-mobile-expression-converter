@@ -130,6 +130,12 @@ namespace MobileExpressionConverter.Editor
             serializedObject.Update();
             EnsureProcessingModes(serializedObject);
             DrawFaceRenderers();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("previewInEditor"),
+                new GUIContent(Texts.T("NDMF Preview", "NDMF 预览", "NDMF プレビュー")));
+            EditorGUILayout.HelpBox(Texts.T(
+                "NDMF Preview is enabled by default and displays mobile expressions in the Scene view on Android/iOS build targets. PC targets show the original appearance.",
+                "NDMF 预览默认启用，在 Android/iOS 构建目标下于 Scene 视图显示移动端表情。PC 目标下显示原始效果。",
+                "NDMF プレビューは初期状態で有効です。Android/iOS のビルドターゲットでモバイル表情を表示し、PC ターゲットでは元の外観を表示します。"), MessageType.None);
             serializedObject.ApplyModifiedProperties();
             var settings = (MobileExpressionSettings)target;
             EditorGUILayout.HelpBox(Texts.T(

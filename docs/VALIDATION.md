@@ -1,5 +1,16 @@
 # Validation and implementation notes
 
+## Unreleased NDMF preview — October 18, 2026
+
+The runtime and editor sources compiled with Unity 2022.3.22f1 against the existing CQMHVPinkChocolat project's NDMF 1.14.8 and SDK assemblies. An existing-project batch run passed 18 preview checks using disposable objects in an untitled batch scene. It exercised the initial disabled preview default (subsequently changed to enabled), target-group discovery, two meshes sharing a source with separate Multiply / Additive outputs, shared generated textures, preservation of opaque/null slots and original renderer/material/texture references, shape-only resource reuse, material-triggered rebuilds, material-switch invalidation, idempotent disposal, disabled-preview behavior and preservation of the build target.
+
+The headless test explicitly pumped NDMF's editor synchronization queue because normal editor callback setup did not run reliably alongside this project's toolbar extensions in batch mode. This is a filter-level validation, not an interactive Scene view acceptance check. Temporary validation scripts and objects were removed after the successful run. No new Unity project was created and no scene asset was saved. Existing build conversion and mobile-target guards remain unchanged.
+
+
+A subsequent live-editor check verified that newly added components enable NDMF Preview by default, the Chinese preview control reads NDMF 预览, and disabling the serialized toggle remains supported. The temporary preview scene was closed and the active scene retained its root count and dirty state. Unity recompiled the updated scripts without console errors.
+
+Preview was subsequently restricted to Android/iOS build targets, sharing the build conversion platform predicate. A live-editor check verified Android/iOS acceptance and Windows rejection, one target group with the published mobile flag enabled and none with it disabled, and ComputeContext invalidation after the flag changed (explicitly pumping NDMF scheduling). The published flag was restored; the actual editor build target was not switched. Updated sources compiled without console errors.
+
 ## Version 1.2.0 multiple face renderers
 
 On October 17, 2026, the runtime and editor sources compiled together with Unity 2022.3.22f1 Roslyn against the connected Test-Avatar project's assemblies. Thirteen checks ran in that editor using temporary objects in a preview scene: legacy single-renderer JSON, null additional arrays, multiple explicit selections, inactive meshes, empty and duplicate entries, additional-only selection, descriptor / multiple Body detection, serialized-property updates and JSON round trips, rejection of external renderers, and reference remapping in cloned avatars for both processing modes. Preview objects were removed, and the user's active scene kept its original root count and dirty state. No independent Unity test project was created.

@@ -45,6 +45,12 @@ When no meshes are assigned, MEC detects one mesh: the descriptor's **LipSync â†
 
 To check for a newer stable version, choose **Mobile Expression Converter â†’ Check for Updates** from the Hierarchy context menu or GameObject menu. All editions, including BOOTH imports, use the same VPM repository. The window shows installed and latest versions and provides **Add repository to VCC / ALCOM** and **Copy repository URL**. Add the repository once, then select your project in VCC / ALCOM and install or update **Mobile Expression Converter**. The client manages the package update and dependencies.
 
+## NDMF preview
+
+**NDMF Preview** is enabled by default on the component. Enable NDMF preview in the Scene view to see the result while the project targets Android or iOS. PC targets display the original appearance. Use the **NDMF Preview** switch in NDMF's preview controls to compare the result.
+
+Each selected mesh uses its own processing mode. Changing mesh selections, modes, source materials or textures refreshes the preview. Material switches visible in the editor are converted on the preview proxies; this does not simulate an entire Animator controller. Preview only replaces proxy materials, preserves mesh and material-slot structure, and releases generated materials and textures when disabled or rebuilt. Original assets and Windows builds remain unchanged. With VQT preview enabled, MEC's expression preview runs before VQT material conversion.
+
 ## Supported scope
 
 - Transparent lilToon materials and Poiyomi **Fade / Transparent** materials on all selected face renderers.
